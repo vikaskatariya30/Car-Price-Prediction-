@@ -1,40 +1,24 @@
-from flask import Flask, render_template, request
+import streamlit as st
 import pandas as pd
-import numpy as np
 import pickle
-
-app = Flask(__name__, template_folder='template')
-car=pd.read_csv('cleaned_car.csv')
 
 model = pickle.load(open('model.pkl', 'rb'))
 
 
-@app.route('/')
-def index():
-    companies = sorted(car['company'].unique())
-    car_model = sorted(car['name'].unique())
-    year = sorted(car['year'].unique(), reverse=True)
-    km_driven = sorted(car['km_driven'].unique())
-    fuel_type = sorted(car['fuel'].unique())
-    seller_type = sorted(car['seller_type'].unique())
-    transmissions = sorted(car['transmission'].unique())
-    owners = sorted(car['owner'].unique())
-    return render_template('main.html', companies=companies, car_model=car_model, year=year, km_driven=km_driven,
-                           fuel_type=fuel_type, seller_type=seller_type, transmissions=transmissions, owners=owners)
+st.title('Car Price Predictor')
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    company=request.form.get('company')
-    car_model=request.form.get('car_model')
-    year=int(request.form.get('year'))
-    km_driven=int(request.form.get('km_driven'))
-    fuel_type=request.form.get('fuel_type')
-    seller_type=request.form.get('seller_type')
-    transmissions=request.form.get('transmissions')
-    owners=request.form.get('owners')
+brand=st.selectbox('Select Brand', ['Maruti', 'Hyundai', 'Honda', 'Toyota', 'Ford', 'Mahindra', 'Tata', 'Renault', 'Volkswagen', 'Skoda'])
+car_name=st.text_input('Enter car name')
+year=st.selectbox('Select Year', [i for i in range(2024, 1982, -1)])
+km_driven=st.number_input('Enter km driven', min_value=0, step=10000000)
+fuel_type=st.selectbox('Select Fuel Type', ['Petrol', 'Diesel', 'CNG', 'LPG', 'Electric'])
+seller_type=st.selectbox('Select Seller Type', ['Individual', 'Dealer', 'Trustmark Dealer'])
+transmission=st.selectbox('Select Transmission Type', ['Manual', 'Automatic'])
+owner=st.selectbox('Select Owner Type', ['First Owner', 'Second Owner', 'Third Owner', 'Fourth & Above Owner', 'Test Drive Car'])
 
-    prediction=model.predict(pd.DataFrame([[car_model, year, km_driven, fuel_type, seller_type, transmissions, owners, company]], columns=['name', 'year', 'km_driven', 'fuel', 'seller_type', 'transmission', 'owner', 'company']))
+data=pd.DataFrame([[car_name, year, km_driven, fuel_type, seller_type, transmission, owner, brand]], columns=['name', 'year', 'km_driven', 'fuel', 'seller_type', 'transmission', 'owner', 'company'])
 
-    return str(np.round(prediction[0], 2))
-if __name__ == '__main__':
-    app.run(debug=True)
+if st.button('Predict Price'):
+    prediction=model.predict(data)
+    st.write(f'Predicted Price: {prediction[0]}')
+
